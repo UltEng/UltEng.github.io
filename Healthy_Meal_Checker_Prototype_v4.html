@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Healthy Meal Checker</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f3f7f3;font-family:Arial,sans-serif;color:#18351f}
+.app{max-width:440px;margin:auto;min-height:100vh;background:white}
+header{background:#dff3df;padding:22px}
+header h1{margin:0;font-size:25px}
+header p{margin:6px 0 0;color:#55705b}
+main{padding:18px}
+.card{border:1px solid #d8e5d8;border-radius:16px;padding:16px;margin-bottom:14px}
+h2{font-size:19px;margin:0 0 12px}
+label{display:block;font-weight:bold;margin:11px 0 5px}
+input,select{width:100%;padding:11px;border:1px solid #c8d5c8;border-radius:9px;font-size:15px}
+.meals{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.meal-btn{padding:12px 5px;border:2px solid #cbd9cb;border-radius:10px;background:#fff;color:#24452b;font-weight:bold;cursor:pointer}
+.meal-btn:hover{background:#eef7ee}
+.meal-btn.selected{background:#2f7d43;color:white;border-color:#2f7d43}
+button.action{width:100%;padding:12px;border:0;border-radius:10px;background:#2f7d43;color:white;font-size:15px;font-weight:bold;cursor:pointer;margin-top:12px}
+button.secondary{background:#e8f1e8;color:#245a31}
+.small{font-size:12px;color:#657367}
+#foods{padding-left:20px;line-height:1.7}
+.result{margin-top:15px;padding:16px;border-radius:15px;background:#eef8ee}
+.score{font-size:34px;font-weight:bold}
+.green{color:#20743a}.yellow{color:#9a7000}.orange{color:#c35a12}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+<h1>🥗 Healthy Meal Checker</h1>
+<p>Check a meal and find ways to make it more balanced.</p>
+</header>
+
+<main>
+<div class="card">
+<h2>1. Choose your meal</h2>
+<div class="meals">
+<button type="button" id="breakfastBtn" class="meal-btn selected">🌅 Breakfast</button>
+<button type="button" id="lunchBtn" class="meal-btn">☀️ Lunch</button>
+<button type="button" id="dinnerBtn" class="meal-btn">🌙 Dinner</button>
+</div>
+<p class="small" id="mealStatus">Selected meal: Breakfast</p>
+</div>
+
+<div class="card">
+<h2>2. Add food</h2>
+<label for="food">Food name</label>
+<input id="food" placeholder="e.g. Grilled chicken">
+
+<label for="amount">Amount / portion</label>
+<input id="amount" placeholder="e.g. 1 piece">
+
+<label for="group">Food group</label>
+<select id="group">
+<option>Carbohydrate</option>
+<option>Protein</option>
+<option>Vegetables</option>
+<option>Fruit</option>
+<option>Dairy / calcium-rich</option>
+<option>Healthy fats</option>
+</select>
+
+<button type="button" class="action" id="addBtn">+ Add Food</button>
+<ul id="foods"><li>No food added yet.</li></ul>
+</div>
+
+<div class="card">
+<h2>3. Optional nutrient information</h2>
+
+<label for="sugar">Sugar (g)</label>
+<input id="sugar" type="number" min="0" placeholder="e.g. 8">
+
+<label for="sodium">Sodium (mg)</label>
+<input id="sodium" type="number" min="0" placeholder="e.g. 400">
+
+<label for="fat">Fat (g)</label>
+<input id="fat" type="number" min="0" placeholder="e.g. 10">
+
+<label for="carb">Carbohydrate (g)</label>
+<input id="carb" type="number" min="0" placeholder="e.g. 45">
+
+<label for="protein">Protein (g)</label>
+<input id="protein" type="number" min="0" placeholder="e.g. 25">
+
+<p class="small">These values are for educational feedback in this classroom prototype.</p>
+</div>
+
+<button type="button" class="action" id="checkBtn">Check My Meal</button>
+<button type="button" class="action secondary" id="clearBtn">Clear Meal</button>
+
+<div id="result" class="result hidden">
+<h2 id="resultTitle"></h2>
+<div id="score" class="score"></div>
+<p id="checks"></p>
+<h3>💡 Try this</h3>
+<p id="suggestion"></p>
+<p class="small">This app gives educational feedback about the meal. It is not a medical diagnosis.</p>
+</div>
+</main>
+</div>
+
+<script>
+(function(){
+  let selectedMeal = "Breakfast";
+  let foods = [];
+
+  const buttons = {
+    Breakfast: document.getElementById("breakfastBtn"),
+    Lunch: document.getElementById("lunchBtn"),
+    Dinner: document.getElementById("dinnerBtn")
+  };
+
+  function chooseMeal(name){
+    selectedMeal = name;
+    Object.keys(buttons).forEach(function(key){
+      buttons[key].classList.toggle("selected", key === name);
+    });
+    document.getElementById("mealStatus").textContent = "Selected meal: " + name;
+  }
+
+  // Explicit listeners — no inline handlers.
+  buttons.Breakfast.addEventListener("click", function(){ chooseMeal("Breakfast"); });
+  buttons.Lunch.addEventListener("click", function(){ chooseMeal("Lunch"); });
+  buttons.Dinner.addEventListener("click", function(){ chooseMeal("Dinner"); });
+
+  function renderFoods(){
+    const list = document.getElementById("foods");
+    list.innerHTML = "";
+    if(foods.length === 0){
+      list.innerHTML = "<li>No food added yet.</li>";
+      return;
+    }
+    foods.forEach(function(f,index){
+      const li = document.createElement("li");
+      li.textContent = f.name + " — " + f.amount + " (" + f.group + ") ";
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.textContent = "Remove";
+      remove.style.marginLeft = "8px";
+      remove.addEventListener("click", function(){
+        foods.splice(index,1);
+        renderFoods();
+      });
+      li.appendChild(remove);
+      list.appendChild(li);
+    });
+  }
+
+  document.getElementById("addBtn").addEventListener("click", function(){
+    const name = document.getElementById("food").value.trim();
+    const amount = document.getElementById("amount").value.trim();
+    const group = document.getElementById("group").value;
+
+    if(!name || !amount){
+      alert("Please enter the food name and amount.");
+      return;
+    }
+
+    foods.push({name:name, amount:amount, group:group});
+    document.getElementById("food").value = "";
+    document.getElementById("amount").value = "";
+    renderFoods();
+  });
+
+  document.getElementById("checkBtn").addEventListener("click", function(){
+    if(foods.length === 0){
+      alert("Please add at least one food first.");
+      return;
+    }
+
+    const groups = new Set(foods.map(function(f){return f.group;}));
+    let score = Math.min(25, groups.size * 5);
+
+    const veg = groups.has("Vegetables");
+    const fruit = groups.has("Fruit");
+    const proteinGroup = groups.has("Protein");
+    const carbGroup = groups.has("Carbohydrate");
+
+    if(veg) score += 10;
+    if(fruit) score += 10;
+    if(proteinGroup) score += 15;
+    if(carbGroup) score += 10;
+
+    const sugar = Number(document.getElementById("sugar").value || 0);
+    const sodium = Number(document.getElementById("sodium").value || 0);
+    const fat = Number(document.getElementById("fat").value || 0);
+    const protein = Number(document.getElementById("protein").value || 0);
+
+    score += sugar <= 10 ? 10 : 5;
+    score += sodium <= 600 ? 10 : 5;
+    score += fat <= 15 ? 10 : 5;
+    score = Math.min(100, Math.round(score));
+
+    let title, cls;
+    if(score >= 80){title="🟢 More Balanced & Healthier";cls="green";}
+    else if(score >= 60){title="🟡 Healthy but Could Be More Balanced";cls="yellow";}
+    else {title="🟠 Needs Improvement";cls="orange";}
+
+    document.getElementById("resultTitle").textContent = title;
+    document.getElementById("score").textContent = score + " / 100";
+    document.getElementById("score").className = "score " + cls;
+
+    document.getElementById("checks").innerHTML =
+      "Meal: <b>" + selectedMeal + "</b><br>" +
+      "Food-group variety: " + (groups.size >= 4 ? "Good" : "Could improve") + "<br>" +
+      "Vegetables: " + (veg ? "✅ Included" : "❌ Add some") + "<br>" +
+      "Fruit: " + (fruit ? "✅ Included" : "❌ Add some") + "<br>" +
+      "Protein food group: " + (proteinGroup ? "✅ Included" : "❌ Add a source") + "<br>" +
+      "Carbohydrate: " + (carbGroup ? "✅ Included" : "⚠️ Consider a suitable source") + "<br>" +
+      "Sugar: " + (sugar <= 10 ? "✅ Relatively low" : "⚠️ Consider limiting") + "<br>" +
+      "Sodium: " + (sodium <= 600 ? "✅ Relatively low" : "⚠️ Consider a lower-sodium choice") + "<br>" +
+      "Fat: " + (fat <= 15 ? "✅ Appropriate for this prototype" : "⚠️ Review amount/quality") + "<br>" +
+      "Protein amount: " + (protein > 0 ? "✅ " + protein + " g entered" : "ℹ️ Optional");
+
+    let tips = [];
+    if(!veg) tips.push("add a vegetable");
+    if(!fruit) tips.push("add a fruit");
+    if(!proteinGroup) tips.push("add a protein source");
+    if(sugar > 10) tips.push("limit sugary foods or drinks");
+    if(sodium > 600) tips.push("choose a lower-sodium option");
+
+    document.getElementById("suggestion").textContent =
+      tips.length ? "Try to " + tips.join(", ") + "." :
+      "Great variety! Keep making balanced choices.";
+
+    document.getElementById("result").classList.remove("hidden");
+  });
+
+  document.getElementById("clearBtn").addEventListener("click", function(){
+    foods = [];
+    renderFoods();
+    document.getElementById("food").value = "";
+    document.getElementById("amount").value = "";
+    document.getElementById("sugar").value = "";
+    document.getElementById("sodium").value = "";
+    document.getElementById("fat").value = "";
+    document.getElementById("carb").value = "";
+    document.getElementById("protein").value = "";
+    document.getElementById("result").classList.add("hidden");
+    chooseMeal("Breakfast");
+  });
+})();
+</script>
+</body>
+</html>
